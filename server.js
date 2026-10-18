@@ -1,3 +1,16 @@
+{
+  "name": "patient-care-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
