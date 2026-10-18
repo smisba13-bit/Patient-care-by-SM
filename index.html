@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Care by SM - Healthcare Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 700px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1, h2 { color: #007BFF; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        button { background: #007BFF; color: white; border: none; padding: 10px 15px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; }
+        button:hover { background: #0056b3; }
+        .card { background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 6px; border: 1px solid #ddd; }
+        .success { color: green; font-weight: bold; }
+        .badge { background: #ffc107; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-success { background: #28a745; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <h1>🏥 Patient Care System by SM</h1>
+    <p style="text-align: center; color: #666;">Secure Patient Authentication, Prescription Workspace & AI Reminders</p>
+    <hr style="margin: 20px 0;">
+
+    <!-- STEP 1: LOGIN SECTION -->
+    <div id="login-section">
+        <h2>Step 1: Secure OTP Login</h2>
+        <div class="form-group">
+            <label>Select Role:</label>
+            <select id="loginRole" onchange="toggleEmployeeField()">
+                <option value="patient">Patient</option>
+                <option value="pharmacist">Pharmacist</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Mobile Number:</label>
+            <input type="text" id="mobileNumber" placeholder="Enter mobile number (e.g., 9876543210)" required>
+        </div>
+        <div class="form-group" id="employeeFieldGroup" style="display: none;">
+            <label>Employee ID (Required for Pharmacist):</label>
+            <input type="text" id="employeeId" placeholder="Enter Employee ID">
+        </div>
+        <button onclick="handleLogin()">Get OTP & Login (Hint OTP: 1234)</button>
+        <p id="loginMessage" style="text-align: center; margin-top: 10px;"></p>
+    </div>
+
+    <!-- DASHBOARD SECTION (Hidden until login) -->
+    <div id="dashboard-section" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="welcomeText">Welcome</h3>
+            <button onclick="logout()" style="background: #dc3545; width: auto; padding: 5px 15px;">Logout</button>
+        </div>
+        <hr>
+
+        <!-- PATIENT VIEW -->
+        <div id="patient-view" style="display: none;">
+            <h2>📋 Patient Prescription Upload</h2>
+            <div class="form-group">
+                <label>Upload Prescription Photo/File:</label>
+                <input type="file" id="rxFile">
+            </div>
+            <div class="form-group">
+                <label>Symptoms / Notes:</label>
+                <textarea id="rxNotes" placeholder="e.g., Fever and headache for 2 days" rows="3"></textarea>
+            </div>
+            <button onclick="uploadPrescription()" style="background: #28a745;">Submit to Pharmacist Workspace</button>
+            <p id="uploadStatus" class="success" style="margin-top: 10px;"></p>
+
+            <h3 style="margin-top: 30px;">Your Uploaded Prescriptions</h3>
+            <div id="patientRxList"></div>
+        </div>
+
+        <!-- PHARMACIST VIEW -->
+        <div id="pharmacist-view" style="display: none;">
+            <h2>👨‍⚕️ Pharmacist Verification Workspace</h2>
+            <button onclick="loadPharmacistQueue()">🔄 Refresh Queue</button>
+            <div id="pharmacistQueueList" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- AI VOICE ENGINE SIMULATION -->
+        <div style="margin-top: 40px; padding: 15px; background: #eef9ff; border-radius: 6px; border: 1px solid #bce8f1;">
+            <h3>🤖 AI Voice Call & Reminder Simulator</h3>
+            <p>Simulate outbound AI voice calls that notify patients at scheduled medicine times.</p>
+            <button onclick="triggerAICall()" style="background: #17a2b8;">📞 Trigger Test AI Voice Call Now</button>
+            <div id="aiCallLogs" style="margin-top: 10px; font-size: 14px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // In-memory frontend mock state storage
+    let currentUser = null;
+    let mockDatabase = {
+        prescriptions: [],
+        callLogs: []
+    };
+
+    function toggleEmployeeField() {
+        const role = document.getElementById('loginRole').value;
+        const empGroup = document.getElementById('employeeFieldGroup');
+        empGroup.style.display = role === 'pharmacist' ? 'block' : 'none';
+    }
+
+    function handleLogin() {
+        const role = document.getElementById('loginRole').value;
+        const mobile = document.getElementById('mobileNumber').value;
+        const empId = document.getElementById('employeeId').value;
+        const msg = document.getElementById('loginMessage');
+
+        if (!mobile) {
+            alert("Please enter a mobile number.");
+            return;
+        }
+
+        if (role === 'pharmacist' && !empId) {
+            alert("Employee ID is mandatory for Pharmacist login.");
+            return;
+        }
+
+        // Simulate OTP verification (Hint: 1234)
+        const otpInput = prompt("Enter 4-digit OTP sent to " + mobile + " (Hint: type 1234):");
+        if (otpInput !== "1234") {
+            msg.innerHTML = "❌ Invalid OTP. Try again.";
+            msg.style.color = "red";
+            return;
+        }
+
+        currentUser = { mobileNumber: mobile, role: role, employeeId: empId };
+        
+        // Switch views
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('dashboard-section').style.display = 'block';
+        document.getElementById('welcomeTextinnerText').innerText = `Logged in as: ${role.toUpperCase()} (${mobile})`;
+
+        if (role === 'patient') {
+            document.getElementById('patient-view').style.display = 'block';
+            renderPatientRx();
+        } else {
+            document.getElementById('pharmacist-view').style.display = 'block';
+            loadPharmacistQueue();
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('patient-view').style.display = 'none';
+        document.getElementById('pharmacist-view').style.display = 'none';
+    }
+
+    function uploadPrescription() {
+        const notes = document.getElementById('rxNotes').value;
+        const fileInput = document.getElementById('rxFile');
+        const status = document.getElementById('uploadStatus');
+
+        const newRx = {
+            id: "RX-" + Date.now(),
+            patientMobile: currentUser.mobileNumber,
+            notes: notes || "No notes provided",
+            status: "PENDING_VERIFICATION",
+            dosageForm: null,
+            createdAt: new Date().toLocaleTimeString()
+        };
+
+        mockDatabase.prescriptions.push(newRx);
+        status.innerText = "✅ Prescription uploaded successfully and sent to Pharmacist!";
+        document.getElementById('rxNotes').value = '';
+        renderPatientRx();
+    }
+
+    function renderPatientRx() {
+        const listDiv = document.getElementById('patientRxList');
+        const userRx = mockDatabase.prescriptions.filter(p => p.patientMobile === currentUser.mobileNumber);
+        
+        if (userRx.length === 0) {
+            listDiv.innerHTML = "<p>No prescriptions uploaded yet.</p>";
+            return;
+        }
+
+        let html = "";
+        userRx.forEach(rx => {
+            html += `<div class="card">
+                <b>ID: ${rx.id}</b> | Status: <span class="badge ${rx.status === 'APPROVED' ? 'badge-success' : ''}">${rx.status}</span><br>
+                <small>Notes: ${rx.notes}</small><br>`;
+            if (rx.dosageForm) {
+                html += `<p style="color: green; margin-top:5px;"><b>Prescribed Medicine:</b> ${rx.dosageForm.medicineName} (${rx.dosageForm.dosageForm}) - ${rx.dosageForm.frequency}</p>`;
+            }
+            html += `</div>`;
+        });
+        listDiv.innerHTML = html;
+    }
+
+    function loadPharmacistQueue() {
+        const qDiv = document.getElementById('pharmacistQueueList');
+        if (mockDatabase.prescriptions.length === 0) {
+            qDiv.innerHTML = "<p>No prescription queue found.</p>";
+            return;
+        }
+
+        let html = "";
+        mockDatabase.prescriptions.forEach(rx => {
+            html += `<div class="card">
+                <b>Prescription ID: ${rx.id}</b><br>
+                <small>Patient Mobile: ${rx.patientMobile} | Notes: ${rx.notes}</small><br>
+                Status: <b>${rx.status}</b><br>`;
+            
+            if (rx.status === 'PENDING_VERIFICATION') {
+                html += `<div style="margin-top: 10px; background: #fff; padding: 10px; border: 1px solid #ccc;">
+                    <h4>Assign Dosage Schedule</h4>
+                    <input type="text" id="med-${rx.id}" placeholder="Medicine Name (e.g. Paracetamol 650mg)" value="Paracetamol 650mg" style="margin-bottom:5px;">
+                    <input type="text" id="freq-${rx.id}" placeholder="Frequency (e.g. Morning 8 AM, Night 9 PM)" value="Morning 8 AM, Night 9 PM" style="margin-bottom:5px;">
+                    <button onclick="approveRx('${rx.id}')" style="background: #28a745; margin-top:5px;">Approve & Sync with AI</button>
+                </div>`;
+            } else {
+                html += `<p style="color: #28a745; margin-top:5px;">✔ Approved: ${rx.dosageForm.medicineName} (${rx.dosageForm.frequency})</p>`;
+            }
+            html += `</div>`;
+        });
+        qDiv.innerHTML = html;
+    }
+
+    function approveRx(rxId) {
+        const medName = document.getElementById(`med-${rxId}`).value;
+        const freq = document.getElementById(`freq-${rxId}`).value;
+
+        const rx = mockDatabase.prescriptions.find(p => p.id === rxId);
+        if (rx) {
+            rx.status = "APPROVED";
+            rx.dosageForm = {
+                medicineName: medName,
+                dosageForm: "Tablet",
+                frequency: freq,
+                durationDays: 7
+            };
+            alert("Dosage approved successfully!");
+            loadPharmacistQueue();
+        }
+    }
+
+    function triggerAICall() {
+        const callBox = document.getElementById('aiCallLogs');
+        const callLog = {
+            callId: "CALL-" + Date.now(),
+            message: "Hello! This is your AI healthcare assistant. It is time to take your prescribed medicine after breakfast."
+        };
+        mockDatabase.callLogs.push(callLog);
+
+        callBox.innerHTML = `<div style="background: #fff; padding: 10px; border: 1px solid #17a2b8; border-radius: 4px; margin-top: 5px;">
+            📞 <b>AI Outbound Call Triggered!</b><br>
+            <i>Spoken Message:</i> "${callLog.message}"
+        </div>`;
+    }
+</script>
+
+</body>
+</html>
