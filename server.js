@@ -197,7 +197,9 @@ app.get('/api/ai/call-logs', (req, res) => {
 });
 
 // Start Server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || // Localhost ki jagah live backend ka link dalein
+const API_URL = "https://patient-care-backend.onrender.com";
+
 app.listen(PORT, () => {
     console.log(`🚀 Healthcare Backend running on port ${PORT}`);
 });
